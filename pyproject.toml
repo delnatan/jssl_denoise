@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "jssl-denoise"
+version = "0.1.0"
+description = "Joint self-supervised blind denoising and noise estimation (Ollion et al., 2021) — PyTorch implementation"
+requires-python = ">=3.10"
+dependencies = [
+    "torch>=2.0",
+    "numpy>=1.24",
+]
+
+[project.optional-dependencies]
+examples = ["tifffile", "pillow"]
+dev = ["pytest", "tifffile", "pillow"]
+gui = ["pyvistra", "qtpy"]
+
+[project.entry-points."pyvistra.plugins"]
+jssl-denoise = "jssl_denoise._pyvistra_plugin:register"
+
+[tool.setuptools.packages.find]
+include = ["jssl_denoise*"]
