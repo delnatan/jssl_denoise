@@ -22,3 +22,6 @@ jssl-denoise = "jssl_denoise._pyvistra_plugin:register"
 
 [tool.setuptools.packages.find]
 include = ["jssl_denoise*"]
+
+[tool.ruff]
+line-length = 80

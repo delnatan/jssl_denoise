@@ -20,12 +20,16 @@ _raw_kernel = torch.tensor(
 NEIGHBOR_KERNEL = (_raw_kernel / _raw_kernel.sum()).view(1, 1, 3, 3)
 
 
-def sample_grid_spacing(rng: np.random.Generator, low: int = 3, high: int = 5) -> int:
+def sample_grid_spacing(
+    rng: np.random.Generator, low: int = 3, high: int = 5
+) -> int:
     """Draws an integer masking-grid spacing uniformly from {low, ..., high}."""
     return int(rng.integers(low, high + 1))
 
 
-def make_grid_mask(shape: tuple[int, int], spacing: int, rng: np.random.Generator) -> np.ndarray:
+def make_grid_mask(
+    shape: tuple[int, int], spacing: int, rng: np.random.Generator
+) -> np.ndarray:
     """Boolean (H, W) mask, True at masked grid points, with a random phase offset."""
     height, width = shape
     row_offset = int(rng.integers(0, spacing))
@@ -44,7 +48,9 @@ def gaussian_neighbor_average(image: torch.Tensor) -> torch.Tensor:
     return F.conv2d(padded, kernel)
 
 
-def apply_masking(image: torch.Tensor, mask: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
+def apply_masking(
+    image: torch.Tensor, mask: torch.Tensor
+) -> tuple[torch.Tensor, torch.Tensor]:
     """Replaces masked pixels with their neighbor-averaged value g(Y).
 
     image: (B, 1, H, W) tensor. mask: (H, W) bool tensor, shared across the batch

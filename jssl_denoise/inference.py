@@ -51,7 +51,9 @@ class Denoiser:
 
     @classmethod
     def load(cls, path: str | Path, device: str | None = None) -> "Denoiser":
-        return cls.from_checkpoint(load_checkpoint(path), _select_device(device))
+        return cls.from_checkpoint(
+            load_checkpoint(path), _select_device(device)
+        )
 
     def denoise(
         self, image: np.ndarray, tta: bool = True

@@ -96,16 +96,16 @@ class Trainer:
                     rng, cfg.mask_spacing_low, cfg.mask_spacing_high
                 )
                 mask = torch.from_numpy(
-                    make_grid_mask(
-                        (cfg.tile_size, cfg.tile_size), spacing, rng
-                    )
+                    make_grid_mask((cfg.tile_size, cfg.tile_size), spacing, rng)
                 ).to(device)
                 masked_input, _ = apply_masking(batch, mask)
 
                 optimizer.zero_grad()
                 mu = d_net(masked_input)
                 sigma = n_net(mu)
-                loss = gaussian_nll_masked(batch, mu, sigma, mask, beta=cfg.nll_beta)
+                loss = gaussian_nll_masked(
+                    batch, mu, sigma, mask, beta=cfg.nll_beta
+                )
                 loss.backward()
                 optimizer.step()
 
@@ -116,7 +116,9 @@ class Trainer:
                     # denoising-quality signal; unlike `loss` it can't be
                     # driven down by N-Net alone shrinking sigma, so it's the
                     # metric to watch for whether D-Net is still improving.
-                    epoch_mse_sum += float(((batch - mu) ** 2)[..., mask].mean().cpu())
+                    epoch_mse_sum += float(
+                        ((batch - mu) ** 2)[..., mask].mean().cpu()
+                    )
                     epoch_sigma_sum += float(sigma[..., mask].mean().cpu())
                 if callback is not None:
                     callback.on_step_end(

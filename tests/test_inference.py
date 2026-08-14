@@ -9,7 +9,9 @@ from jssl_denoise.normalization import RobustNormalizer
 
 def _make_denoiser() -> Denoiser:
     normalizer = RobustNormalizer(mode=100.0, scale=10.0)
-    return Denoiser(DNet(base_filters=8), NNet(), normalizer, torch.device("cpu"))
+    return Denoiser(
+        DNet(base_filters=8), NNet(), normalizer, torch.device("cpu")
+    )
 
 
 def test_tta_dihedral_transforms_are_involutions():
@@ -28,7 +30,9 @@ def test_tta_dihedral_transforms_are_involutions():
 
 def test_denoise_output_shape_and_dtype():
     denoiser = _make_denoiser()
-    image = (np.random.default_rng(0).poisson(lam=100, size=(37, 53))).astype(np.uint16)
+    image = (np.random.default_rng(0).poisson(lam=100, size=(37, 53))).astype(
+        np.uint16
+    )
 
     denoised, noise_std_map = denoiser.denoise(image, tta=True)
 
@@ -58,7 +62,9 @@ def test_checkpoint_roundtrip_gives_identical_output(tmp_path):
 
     reloaded = Denoiser.load(path, device="cpu")
 
-    image = (np.random.default_rng(1).poisson(lam=100, size=(24, 24))).astype(np.uint16)
+    image = (np.random.default_rng(1).poisson(lam=100, size=(24, 24))).astype(
+        np.uint16
+    )
     d1, s1 = denoiser.denoise(image, tta=False)
     d2, s2 = reloaded.denoise(image, tta=False)
 
@@ -88,7 +94,9 @@ def test_from_checkpoint_matches_load(tmp_path):
     from_dict = Denoiser.from_checkpoint(ckpt, torch.device("cpu"))
     from_file = Denoiser.load(path, device="cpu")
 
-    image = (np.random.default_rng(2).poisson(lam=100, size=(24, 24))).astype(np.uint16)
+    image = (np.random.default_rng(2).poisson(lam=100, size=(24, 24))).astype(
+        np.uint16
+    )
     d1, s1 = from_dict.denoise(image, tta=False)
     d2, s2 = from_file.denoise(image, tta=False)
 

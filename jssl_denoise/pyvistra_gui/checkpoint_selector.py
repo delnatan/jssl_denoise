@@ -115,11 +115,15 @@ class CheckpointSelector(QGroupBox):
         self.combo.blockSignals(True)
         self.combo.clear()
         if self._session_checkpoint is not None:
-            self.combo.addItem(f"(session) {self._session_summary}", self._SESSION)
+            self.combo.addItem(
+                f"(session) {self._session_summary}", self._SESSION
+            )
         if self._file_path:
             if self._session_checkpoint is not None:
                 self.combo.insertSeparator(self.combo.count())
-            self.combo.addItem(f"File: {self._file_path.rsplit('/', 1)[-1]}", self._LOAD_FILE)
+            self.combo.addItem(
+                f"File: {self._file_path.rsplit('/', 1)[-1]}", self._LOAD_FILE
+            )
 
         idx = self.combo.findData(previous) if previous is not None else -1
         if idx < 0:

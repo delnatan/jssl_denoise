@@ -16,7 +16,13 @@ class ConvBlock(nn.Module):
 
     def __init__(self, in_channels: int, out_channels: int):
         super().__init__()
-        self.conv = nn.Conv2d(in_channels, out_channels, kernel_size=3, padding=1, padding_mode="zeros")
+        self.conv = nn.Conv2d(
+            in_channels,
+            out_channels,
+            kernel_size=3,
+            padding=1,
+            padding_mode="zeros",
+        )
         self.act = nn.ReLU(inplace=True)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
@@ -30,11 +36,15 @@ class UpsampleConv(nn.Module):
 
     def __init__(self, in_channels: int, out_channels: int):
         super().__init__()
-        self.conv = nn.Conv2d(in_channels, out_channels, kernel_size=2, stride=1, padding=0)
+        self.conv = nn.Conv2d(
+            in_channels, out_channels, kernel_size=2, stride=1, padding=0
+        )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         x = F.interpolate(x, scale_factor=2, mode="nearest")
-        x = F.pad(x, (0, 1, 0, 1))  # asymmetric pad so a 2x2/stride-1 conv preserves the doubled size
+        x = F.pad(
+            x, (0, 1, 0, 1)
+        )  # asymmetric pad so a 2x2/stride-1 conv preserves the doubled size
         return self.conv(x)
 
 
@@ -44,7 +54,12 @@ class DNet(nn.Module):
     Appendix A.1). Fully convolutional — accepts any (even or odd) H, W.
     """
 
-    def __init__(self, in_channels: int = 1, out_channels: int = 1, base_filters: int = 64):
+    def __init__(
+        self,
+        in_channels: int = 1,
+        out_channels: int = 1,
+        base_filters: int = 64,
+    ):
         super().__init__()
         f = base_filters
 
@@ -66,7 +81,9 @@ class DNet(nn.Module):
             nn.Conv2d(f, f, kernel_size=1),
             nn.ReLU(inplace=True),
         )
-        self.out_conv = nn.Conv2d(f, out_channels, kernel_size=1)  # linear output, no activation
+        self.out_conv = nn.Conv2d(
+            f, out_channels, kernel_size=1
+        )  # linear output, no activation
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         height, width = x.shape[-2:]
@@ -105,7 +122,9 @@ class NNet(nn.Module):
     so sigma > 0 everywhere.
     """
 
-    def __init__(self, init_gain: float = 1.0, init_read_noise_var: float = 0.1):
+    def __init__(
+        self, init_gain: float = 1.0, init_read_noise_var: float = 0.1
+    ):
         super().__init__()
         self.raw_gain = nn.Parameter(torch.tensor(_inverse_softplus(init_gain)))
         self.raw_read_noise_var = nn.Parameter(

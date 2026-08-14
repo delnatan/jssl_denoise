@@ -26,7 +26,9 @@ def test_fit_pools_across_stack():
 
 def test_fit_accepts_list_of_frames():
     rng = np.random.default_rng(2)
-    frames = [rng.poisson(lam=100, size=(20, 30)).astype(np.uint16) for _ in range(4)]
+    frames = [
+        rng.poisson(lam=100, size=(20, 30)).astype(np.uint16) for _ in range(4)
+    ]
 
     normalizer = RobustNormalizer.fit(frames)
 

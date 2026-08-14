@@ -187,9 +187,16 @@ class DenoiseDialog(QDialog):
         train_layout = _scroll_tab("Train")
         denoise_layout = _scroll_tab("Denoise")
 
-        self._build_train_tab(train_layout, SourceSelector, RegionSelector, viewer)
+        self._build_train_tab(
+            train_layout, SourceSelector, RegionSelector, viewer
+        )
         self._build_denoise_tab(
-            denoise_layout, SourceSelector, RegionSelector, ImageOutputSelector, BufferProcessingRunner, viewer
+            denoise_layout,
+            SourceSelector,
+            RegionSelector,
+            ImageOutputSelector,
+            BufferProcessingRunner,
+            viewer,
         )
         self._build_batch_tab(FlaggableFileListWidget)
         self._build_monitor_tab(ConvergencePlotWidget)
@@ -205,7 +212,9 @@ class DenoiseDialog(QDialog):
         self.train_source_selector = SourceSelector(title="Source")
         if viewer is not None:
             self.train_source_selector.set_default_window(viewer)
-        self.train_source_selector.source_changed.connect(self._on_train_source_changed)
+        self.train_source_selector.source_changed.connect(
+            self._on_train_source_changed
+        )
         layout.addWidget(self.train_source_selector)
 
         self.train_region_selector = RegionSelector(title="Region (optional)")
@@ -289,7 +298,9 @@ class DenoiseDialog(QDialog):
         ckpt_out_form = _tight_form(QFormLayout(ckpt_out_box))
         path_row = QHBoxLayout()
         self.checkpoint_path_edit = QLineEdit()
-        self.checkpoint_path_edit.setPlaceholderText("(session only -- not saved to disk)")
+        self.checkpoint_path_edit.setPlaceholderText(
+            "(session only -- not saved to disk)"
+        )
         path_row.addWidget(self.checkpoint_path_edit, 1)
         browse_ckpt_btn = QPushButton("Browse...")
         browse_ckpt_btn.clicked.connect(self._browse_checkpoint_save_path)
@@ -325,7 +336,9 @@ class DenoiseDialog(QDialog):
         self._train_force_stop_timer = QTimer(self)
         self._train_force_stop_timer.setSingleShot(True)
         self._train_force_stop_timer.setInterval(5000)
-        self._train_force_stop_timer.timeout.connect(self._reveal_train_force_stop)
+        self._train_force_stop_timer.timeout.connect(
+            self._reveal_train_force_stop
+        )
 
     def _on_train_source_changed(self):
         window = self.train_source_selector.selected_window()
@@ -343,7 +356,9 @@ class DenoiseDialog(QDialog):
             self.train_z_warning_label.setVisible(False)
 
     def _browse_checkpoint_save_path(self):
-        path, _ = QFileDialog.getSaveFileName(self, "Save Checkpoint", "checkpoint.pt", "*.pt")
+        path, _ = QFileDialog.getSaveFileName(
+            self, "Save Checkpoint", "checkpoint.pt", "*.pt"
+        )
         if path:
             if not path.endswith(".pt"):
                 path += ".pt"
@@ -359,7 +374,11 @@ class DenoiseDialog(QDialog):
             self.train_status_label.setStyleSheet("color: #888;")
 
     def _start_training(self):
-        if self._train_thread is not None or self._runner.is_running() or self._batch_runner.is_running():
+        if (
+            self._train_thread is not None
+            or self._runner.is_running()
+            or self._batch_runner.is_running()
+        ):
             return
 
         data, meta = self.train_source_selector.get_source()
@@ -370,14 +389,19 @@ class DenoiseDialog(QDialog):
         T, Z, C, Y, X = data.shape
         bbox = self.train_region_selector.bbox()
         y0, x0, y1, x1 = bbox if bbox is not None else (0, 0, Y, X)
-        t0, t1 = self.train_t_start_spin.value(), self.train_t_end_spin.value() + 1
+        t0, t1 = (
+            self.train_t_start_spin.value(),
+            self.train_t_end_spin.value() + 1,
+        )
         if t0 >= t1 or t1 > T:
             self._set_train_status("Invalid T range.", error=True)
             return
         z = self.train_z_spin.value()
         c = self.train_channel_spin.value()
 
-        frames = [np.asarray(data[t, z, c, y0:y1, x0:x1]) for t in range(t0, t1)]
+        frames = [
+            np.asarray(data[t, z, c, y0:y1, x0:x1]) for t in range(t0, t1)
+        ]
 
         config = TrainingConfig(
             lr=self.lr_spin.value(),
@@ -405,7 +429,9 @@ class DenoiseDialog(QDialog):
             return
 
         self._last_epoch_info = {}
-        self.train_progress_bar.setRange(0, max(1, config.epochs * config.steps_per_epoch))
+        self.train_progress_bar.setRange(
+            0, max(1, config.epochs * config.steps_per_epoch)
+        )
         self.train_progress_bar.setValue(0)
         self._set_train_status("Training...")
         self.train_start_btn.setEnabled(False)
@@ -413,7 +439,9 @@ class DenoiseDialog(QDialog):
         self._hide_train_force_stop()
         self._set_monitor_running_indicator(True)
         self.convergence_plot.clear()
-        self.convergence_plot.set_labels(x_label="Epoch", y_label="loss", y_label_right="mu_mse")
+        self.convergence_plot.set_labels(
+            x_label="Epoch", y_label="loss", y_label_right="mu_mse"
+        )
         self.log_view.clear()
         self._log(
             f"── train {datetime.now():%Y-%m-%d %H:%M:%S} " + "─" * 20 + "\n"
@@ -448,11 +476,17 @@ class DenoiseDialog(QDialog):
 
     def _on_train_step(self, step, total_steps, epoch, loss):
         self.train_progress_bar.setValue((epoch - 1) * total_steps + step)
-        self._set_train_status(f"Training... epoch {epoch}  step {step}/{total_steps}  loss={loss:.4f}")
+        self._set_train_status(
+            f"Training... epoch {epoch}  step {step}/{total_steps}  loss={loss:.4f}"
+        )
 
     def _on_train_epoch(self, epoch, total_epochs, loss, lr):
         self.convergence_plot.append_point("loss", loss, axis="left")
-        self._last_epoch_info = {"epoch": epoch, "total_epochs": total_epochs, "loss": loss}
+        self._last_epoch_info = {
+            "epoch": epoch,
+            "total_epochs": total_epochs,
+            "loss": loss,
+        }
         self._log(f"epoch {epoch}/{total_epochs}  loss={loss:.4f}  lr={lr:.2e}")
 
     def _on_train_epoch_metrics(self, epoch, metrics):
@@ -463,7 +497,9 @@ class DenoiseDialog(QDialog):
 
     def _checkpoint_summary(self) -> str:
         info = getattr(self, "_last_epoch_info", {}) or {}
-        parts = [f"epoch {info.get('epoch', '?')}/{info.get('total_epochs', '?')}"]
+        parts = [
+            f"epoch {info.get('epoch', '?')}/{info.get('total_epochs', '?')}"
+        ]
         if info.get("loss") is not None:
             parts.append(f"loss={info['loss']:.3f}")
         if info.get("mu_mse") is not None:
@@ -480,7 +516,11 @@ class DenoiseDialog(QDialog):
                 self._log(f"saved checkpoint to {path}")
             except Exception as exc:
                 self._log(f"ERROR saving checkpoint: {exc}")
-        status = "Training stopped early -- checkpoint available." if cancelled else "Training completed."
+        status = (
+            "Training stopped early -- checkpoint available."
+            if cancelled
+            else "Training completed."
+        )
         self._set_train_status(status, ok=True)
 
     def _on_train_finished(self, checkpoint):
@@ -500,7 +540,9 @@ class DenoiseDialog(QDialog):
     def _on_train_error(self, message):
         self._log(f"ERROR: {message}")
         short = message.splitlines()[0] if message else ""
-        self._set_train_status(f"Error: {short[:160]}  (see Monitor tab log)", error=True)
+        self._set_train_status(
+            f"Error: {short[:160]}  (see Monitor tab log)", error=True
+        )
         self.train_start_btn.setEnabled(True)
         self.train_cancel_btn.setEnabled(False)
         self._hide_train_force_stop()
@@ -521,7 +563,8 @@ class DenoiseDialog(QDialog):
     def _reveal_train_force_stop(self):
         if self._train_worker is not None:
             self._set_train_status(
-                "Still cancelling... if this doesn't finish, use Force Stop.", error=True
+                "Still cancelling... if this doesn't finish, use Force Stop.",
+                error=True,
             )
             self.train_force_stop_btn.setVisible(True)
             self.train_force_stop_btn.setEnabled(True)
@@ -551,7 +594,9 @@ class DenoiseDialog(QDialog):
         self._train_worker = None
         self._train_thread = None
         self._hide_train_force_stop()
-        self._set_train_status("Force stopped -- no checkpoint recovered.", error=True)
+        self._set_train_status(
+            "Force stopped -- no checkpoint recovered.", error=True
+        )
         self.train_start_btn.setEnabled(True)
         self.train_cancel_btn.setEnabled(False)
         self._set_monitor_running_indicator(False)
@@ -561,7 +606,13 @@ class DenoiseDialog(QDialog):
     # ------------------------------------------------------------------
 
     def _build_denoise_tab(
-        self, layout, SourceSelector, RegionSelector, ImageOutputSelector, BufferProcessingRunner, viewer
+        self,
+        layout,
+        SourceSelector,
+        RegionSelector,
+        ImageOutputSelector,
+        BufferProcessingRunner,
+        viewer,
     ):
         self.checkpoint_selector = CheckpointSelector(title="Checkpoint")
         layout.addWidget(self.checkpoint_selector)
@@ -596,7 +647,9 @@ class DenoiseDialog(QDialog):
 
         options_box = QGroupBox("Options")
         options_form = _tight_form(QFormLayout(options_box))
-        self.tta_cb = QCheckBox("Test-time augmentation (8x dihedral averaging)")
+        self.tta_cb = QCheckBox(
+            "Test-time augmentation (8x dihedral averaging)"
+        )
         self.tta_cb.setChecked(True)
         options_form.addRow(self.tta_cb)
         self.device_combo = _device_combo()
@@ -604,7 +657,9 @@ class DenoiseDialog(QDialog):
         layout.addWidget(options_box)
         layout.addStretch(1)
 
-        self.output_selector = ImageOutputSelector(default_title="Denoised", formats=[".tif", ".ims"])
+        self.output_selector = ImageOutputSelector(
+            default_title="Denoised", formats=[".tif", ".ims"]
+        )
         layout.addWidget(self.output_selector)
 
         self._runner = BufferProcessingRunner(self.viewer, self.output_selector)
@@ -663,7 +718,11 @@ class DenoiseDialog(QDialog):
             self.status_label.setStyleSheet("color: #888;")
 
     def _start(self):
-        if self._runner.is_running() or self._batch_runner.is_running() or self._train_thread is not None:
+        if (
+            self._runner.is_running()
+            or self._batch_runner.is_running()
+            or self._train_thread is not None
+        ):
             return
 
         data, meta = self.source_selector.get_source()
@@ -695,7 +754,9 @@ class DenoiseDialog(QDialog):
         output_meta["name"] = output_meta["filename"]
 
         def prepare_for_t(t):
-            planes = {c: np.asarray(data[t, z, c, y0:y1, x0:x1]) for c in channels}
+            planes = {
+                c: np.asarray(data[t, z, c, y0:y1, x0:x1]) for c in channels
+            }
             return {"source_planes": planes}
 
         def make_worker(frame_data, output_frame_idx):
@@ -740,7 +801,9 @@ class DenoiseDialog(QDialog):
         # for the data the user actually selected via SourceSelector
         # (matches decon_dialog._start's identical swap).
         old_source = self._runner.source_data
-        self._runner.source_data = data.acquire() if hasattr(data, "acquire") else data
+        self._runner.source_data = (
+            data.acquire() if hasattr(data, "acquire") else data
+        )
         if old_source is not None and hasattr(old_source, "release"):
             old_source.release()
 
@@ -754,7 +817,10 @@ class DenoiseDialog(QDialog):
 
     def _reveal_force_stop(self):
         if self._runner.worker is not None:
-            self._set_status("Still cancelling... if this doesn't finish, use Force Stop.", error=True)
+            self._set_status(
+                "Still cancelling... if this doesn't finish, use Force Stop.",
+                error=True,
+            )
             self.force_stop_btn.setVisible(True)
             self.force_stop_btn.setEnabled(True)
 
@@ -784,7 +850,9 @@ class DenoiseDialog(QDialog):
             thread.wait(3000)
         self._runner.cleanup()
         self._hide_force_stop()
-        self._set_status("Force stopped -- state may be inconsistent.", error=True)
+        self._set_status(
+            "Force stopped -- state may be inconsistent.", error=True
+        )
         self.start_btn.setEnabled(True)
         self.cancel_btn.setEnabled(False)
         self._set_monitor_running_indicator(False)
@@ -810,7 +878,9 @@ class DenoiseDialog(QDialog):
     def _on_error(self, message):
         self._log(f"ERROR: {message}")
         short = message.splitlines()[0] if message else ""
-        self._set_status(f"Error: {short[:160]}  (see Monitor tab log)", error=True)
+        self._set_status(
+            f"Error: {short[:160]}  (see Monitor tab log)", error=True
+        )
         self.start_btn.setEnabled(True)
         self.cancel_btn.setEnabled(False)
         self._hide_force_stop()
@@ -850,7 +920,9 @@ class DenoiseDialog(QDialog):
 
         self.batch_file_list = FlaggableFileListWidget()
         self.batch_file_list.filesChanged.connect(self._on_batch_files_changed)
-        self.batch_file_list.checkStateChanged.connect(self._update_batch_status_label)
+        self.batch_file_list.checkStateChanged.connect(
+            self._update_batch_status_label
+        )
         layout.addWidget(self.batch_file_list, 1)
 
         self.batch_status_label = QLabel("No files loaded.")
@@ -916,7 +988,11 @@ class DenoiseDialog(QDialog):
         paths = self.batch_file_list.paths()
         if paths:
             try:
-                self._batch_folder = os.path.commonpath(paths) if len(paths) > 1 else os.path.dirname(paths[0])
+                self._batch_folder = (
+                    os.path.commonpath(paths)
+                    if len(paths) > 1
+                    else os.path.dirname(paths[0])
+                )
             except ValueError:
                 self._batch_folder = os.path.dirname(paths[0])
         self._validate_batch_files()
@@ -924,7 +1000,9 @@ class DenoiseDialog(QDialog):
     def _update_batch_status_label(self):
         total = len(self.batch_file_list.paths())
         checked = len(self.batch_file_list.checked_paths())
-        self._set_batch_status(f"{checked} of {total} file(s) will be processed.")
+        self._set_batch_status(
+            f"{checked} of {total} file(s) will be processed."
+        )
 
     def _reference_requirements(self):
         data, meta = self.source_selector.get_source()
@@ -937,14 +1015,26 @@ class DenoiseDialog(QDialog):
         z = self.z_spin.value()
         c = self.channel_spin.value()
         return dict(
-            t0=t0, t1=t1, z=z, y0=y0, x0=x0, y1=y1, x1=x1, channel=c,
-            min_t=t1, min_z=z + 1, min_c=c + 1,
+            t0=t0,
+            t1=t1,
+            z=z,
+            y0=y0,
+            x0=x0,
+            y1=y1,
+            x1=x1,
+            channel=c,
+            min_t=t1,
+            min_z=z + 1,
+            min_c=c + 1,
         )
 
     def _validate_batch_files(self):
         ref = self._reference_requirements()
         if ref is None:
-            self._set_batch_status("No source selected in Denoise tab -- can't validate.", error=True)
+            self._set_batch_status(
+                "No source selected in Denoise tab -- can't validate.",
+                error=True,
+            )
             return
 
         from pyvistra.io import load_image
@@ -953,7 +1043,9 @@ class DenoiseDialog(QDialog):
             try:
                 data, meta = load_image(path)
             except Exception as exc:
-                self.batch_file_list.set_flag(path, "error", f"Failed to load: {exc}")
+                self.batch_file_list.set_flag(
+                    path, "error", f"Failed to load: {exc}"
+                )
                 continue
             try:
                 T, Z, C, Y, X = data.shape
@@ -963,13 +1055,17 @@ class DenoiseDialog(QDialog):
                 if Z < ref["min_z"]:
                     reasons.append(f"Z={Z} < required {ref['min_z']}")
                 if C < ref["min_c"]:
-                    reasons.append(f"only {C} channel(s), need >= {ref['min_c']}")
+                    reasons.append(
+                        f"only {C} channel(s), need >= {ref['min_c']}"
+                    )
                 if Y < ref["y1"]:
                     reasons.append(f"Y={Y} < required {ref['y1']}")
                 if X < ref["x1"]:
                     reasons.append(f"X={X} < required {ref['x1']}")
                 if reasons:
-                    self.batch_file_list.set_flag(path, "error", "; ".join(reasons))
+                    self.batch_file_list.set_flag(
+                        path, "error", "; ".join(reasons)
+                    )
                 elif Z > ref["min_z"]:
                     self.batch_file_list.set_flag(
                         path,
@@ -989,7 +1085,11 @@ class DenoiseDialog(QDialog):
         self._update_batch_status_label()
 
     def _start_batch(self):
-        if self._runner.is_running() or self._batch_runner.is_running() or self._train_thread is not None:
+        if (
+            self._runner.is_running()
+            or self._batch_runner.is_running()
+            or self._train_thread is not None
+        ):
             return
 
         checked = self.batch_file_list.checked_paths()
@@ -999,7 +1099,9 @@ class DenoiseDialog(QDialog):
 
         ref = self._reference_requirements()
         if ref is None:
-            self._set_batch_status("No source selected in Denoise tab.", error=True)
+            self._set_batch_status(
+                "No source selected in Denoise tab.", error=True
+            )
             return
 
         device = _select_device(self.device_combo.currentData())
@@ -1009,8 +1111,13 @@ class DenoiseDialog(QDialog):
             return
 
         region_params = dict(
-            t0=ref["t0"], t1=ref["t1"], z0=ref["z"],
-            y0=ref["y0"], x0=ref["x0"], y1=ref["y1"], x1=ref["x1"],
+            t0=ref["t0"],
+            t1=ref["t1"],
+            z0=ref["z"],
+            y0=ref["y0"],
+            x0=ref["x0"],
+            y1=ref["y1"],
+            x1=ref["x1"],
             channels=[ref["channel"]],
         )
         out_Y, out_X = ref["y1"] - ref["y0"], ref["x1"] - ref["x0"]
@@ -1021,7 +1128,9 @@ class DenoiseDialog(QDialog):
 
         output_ext = self.batch_output_format_combo.currentData()
         folder = self._batch_folder or os.path.dirname(checked[0])
-        log_path = os.path.join(folder, f"batch_denoise_{datetime.now():%Y%m%d_%H%M%S}.log")
+        log_path = os.path.join(
+            folder, f"batch_denoise_{datetime.now():%Y%m%d_%H%M%S}.log"
+        )
 
         self.progress_bar.setRange(0, 1)
         self.progress_bar.setValue(0)
@@ -1058,7 +1167,9 @@ class DenoiseDialog(QDialog):
 
     def _on_batch_file_error(self, path, message):
         short = message.splitlines()[0] if message else ""
-        self._set_batch_status(f"Error on {os.path.basename(path)}: {short[:160]}", error=True)
+        self._set_batch_status(
+            f"Error on {os.path.basename(path)}: {short[:160]}", error=True
+        )
 
     def _on_batch_all_finished(self):
         self._set_batch_status("Batch completed.", ok=True)
@@ -1080,7 +1191,9 @@ class DenoiseDialog(QDialog):
 
     def _build_monitor_tab(self, ConvergencePlotWidget):
         self.convergence_plot = ConvergencePlotWidget()
-        self.convergence_plot.set_labels(x_label="Epoch", y_label="loss", y_label_right="mu_mse")
+        self.convergence_plot.set_labels(
+            x_label="Epoch", y_label="loss", y_label_right="mu_mse"
+        )
 
         self.log_view = QPlainTextEdit()
         self.log_view.setReadOnly(True)
@@ -1099,7 +1212,9 @@ class DenoiseDialog(QDialog):
         self._monitor_tab_index = self.tabs.addTab(monitor_tab, "Monitor")
 
     def _set_monitor_running_indicator(self, running):
-        self.tabs.setTabText(self._monitor_tab_index, "Monitor ●" if running else "Monitor")
+        self.tabs.setTabText(
+            self._monitor_tab_index, "Monitor ●" if running else "Monitor"
+        )
 
     def _log(self, text):
         self.log_view.appendPlainText(text)

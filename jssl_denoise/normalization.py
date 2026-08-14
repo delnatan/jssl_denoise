@@ -25,7 +25,9 @@ class RobustNormalizer:
     scale: float
 
     @classmethod
-    def fit(cls, images: np.ndarray | Sequence[np.ndarray], percentile: float = 95.0) -> "RobustNormalizer":
+    def fit(
+        cls, images: np.ndarray | Sequence[np.ndarray], percentile: float = 95.0
+    ) -> "RobustNormalizer":
         pooled = _pool_pixels(images).astype(np.float64)
         lo, hi = float(pooled.min()), float(pooled.max())
         p = float(np.percentile(pooled, percentile))
@@ -44,10 +46,14 @@ class RobustNormalizer:
         return cls(mode=float(mode), scale=float(scale))
 
     def transform(self, image: np.ndarray) -> np.ndarray:
-        return ((np.asarray(image, dtype=np.float64) - self.mode) / self.scale).astype(np.float32)
+        return (
+            (np.asarray(image, dtype=np.float64) - self.mode) / self.scale
+        ).astype(np.float32)
 
     def inverse_transform(self, image: np.ndarray) -> np.ndarray:
-        return (np.asarray(image, dtype=np.float64) * self.scale + self.mode).astype(np.float32)
+        return (
+            np.asarray(image, dtype=np.float64) * self.scale + self.mode
+        ).astype(np.float32)
 
     def to_dict(self) -> dict:
         return {"mode": self.mode, "scale": self.scale}

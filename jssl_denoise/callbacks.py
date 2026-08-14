@@ -11,9 +11,13 @@ class TrainingCallback(Protocol):
     ever importing Qt.
     """
 
-    def on_step_end(self, step: int, total_steps: int, epoch: int, loss: float) -> None: ...
+    def on_step_end(
+        self, step: int, total_steps: int, epoch: int, loss: float
+    ) -> None: ...
 
-    def on_epoch_end(self, epoch: int, total_epochs: int, loss: float, lr: float) -> None: ...
+    def on_epoch_end(
+        self, epoch: int, total_epochs: int, loss: float, lr: float
+    ) -> None: ...
 
     # `Trainer` also duck-types an *optional* `on_epoch_metrics(self, epoch,
     # metrics: dict[str, float])` method for extra per-epoch diagnostics
@@ -33,7 +37,9 @@ class ConsoleCallback:
     def __init__(self, step_every: int = 1):
         self.step_every = step_every
 
-    def on_step_end(self, step: int, total_steps: int, epoch: int, loss: float) -> None:
+    def on_step_end(
+        self, step: int, total_steps: int, epoch: int, loss: float
+    ) -> None:
         if step % self.step_every == 0 or step == total_steps:
             print(
                 f"\repoch {epoch} step {step}/{total_steps}  loss={loss:.4f}",
@@ -41,9 +47,17 @@ class ConsoleCallback:
                 flush=True,
             )
 
-    def on_epoch_end(self, epoch: int, total_epochs: int, loss: float, lr: float) -> None:
-        print(f"\repoch {epoch}/{total_epochs}  loss={loss:.4f}  lr={lr:.2e}" + " " * 20, flush=True)
+    def on_epoch_end(
+        self, epoch: int, total_epochs: int, loss: float, lr: float
+    ) -> None:
+        print(
+            f"\repoch {epoch}/{total_epochs}  loss={loss:.4f}  lr={lr:.2e}"
+            + " " * 20,
+            flush=True,
+        )
 
     def on_epoch_metrics(self, epoch: int, metrics: dict[str, float]) -> None:
-        parts = "  ".join(f"{name}={value:.4f}" for name, value in metrics.items())
+        parts = "  ".join(
+            f"{name}={value:.4f}" for name, value in metrics.items()
+        )
         print(f"          {parts}", flush=True)

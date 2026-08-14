@@ -165,7 +165,13 @@ class BatchDenoiseRunner(QObject):
         planes = {}
         for c in region["channels"]:
             planes[c] = np.asarray(
-                data[t, region["z0"], c, region["y0"] : region["y1"], region["x0"] : region["x1"]]
+                data[
+                    t,
+                    region["z0"],
+                    c,
+                    region["y0"] : region["y1"],
+                    region["x0"] : region["x1"],
+                ]
             )
 
         worker = DenoiseWorker(
@@ -226,7 +232,9 @@ class BatchDenoiseRunner(QObject):
             return
         self._run_next_frame()
 
-    def _finish_current_file(self, completed=False, cancelled=False, errored=False):
+    def _finish_current_file(
+        self, completed=False, cancelled=False, errored=False
+    ):
         from pyvistra.io import get_output_format
 
         b = self._batch
@@ -240,7 +248,9 @@ class BatchDenoiseRunner(QObject):
                 _label, saver = get_output_format(b["output_ext"])
                 saver(out_path, buffer, b["current_output_meta"])
                 elapsed = time.monotonic() - b["file_start_time"]
-                self._log(f"[{os.path.basename(path)}] done in {elapsed:.1f}s -> {out_path}")
+                self._log(
+                    f"[{os.path.basename(path)}] done in {elapsed:.1f}s -> {out_path}"
+                )
             except Exception as exc:
                 self._log(f"[{os.path.basename(path)}] ERROR saving: {exc}")
                 self.file_error.emit(path, str(exc))
@@ -260,7 +270,9 @@ class BatchDenoiseRunner(QObject):
 
     def _finish(self, all_done=False, cancelled=False):
         if self._log_fh is not None:
-            self._log_fh.write(f"── batch {'cancelled' if cancelled else 'finished'} ──\n")
+            self._log_fh.write(
+                f"── batch {'cancelled' if cancelled else 'finished'} ──\n"
+            )
             self._log_fh.close()
             self._log_fh = None
         self._batch = None

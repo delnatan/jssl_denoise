@@ -5,10 +5,14 @@ from jssl_denoise.inference import Denoiser
 from jssl_denoise.training import Trainer
 
 
-def _synthetic_stack(rng, n_frames=6, size=64, signal_value=150.0, background=100.0):
+def _synthetic_stack(
+    rng, n_frames=6, size=64, signal_value=150.0, background=100.0
+):
     clean = np.full((size, size), background, dtype=np.float32)
     clean[size // 4 : size // 2, size // 4 : size // 2] = signal_value
-    stack = rng.poisson(clean[None, :, :].repeat(n_frames, axis=0)).astype(np.uint16)
+    stack = rng.poisson(clean[None, :, :].repeat(n_frames, axis=0)).astype(
+        np.uint16
+    )
     return stack
 
 
@@ -64,7 +68,9 @@ def test_should_stop_halts_training_early():
     ckpt = trainer.fit(stack, should_stop=should_stop)
 
     assert ckpt["version"] == "1.0"
-    assert calls["n"] <= 10  # confirms should_stop was actually consulted, not ignored
+    assert (
+        calls["n"] <= 10
+    )  # confirms should_stop was actually consulted, not ignored
 
 
 def test_loss_decreases_with_more_training():

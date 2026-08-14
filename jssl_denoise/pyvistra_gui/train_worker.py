@@ -22,9 +22,15 @@ class TrainingWorker(QObject):
     adapter class translating callback calls into signal emissions.
     """
 
-    step_progress = Signal(int, int, int, float)  # step, total_steps, epoch, loss
-    epoch_finished = Signal(int, int, float, float)  # epoch, total_epochs, loss, lr
-    epoch_metrics = Signal(int, dict)  # epoch, {"mu_mse": ..., "sigma_mean": ...}
+    step_progress = Signal(
+        int, int, int, float
+    )  # step, total_steps, epoch, loss
+    epoch_finished = Signal(
+        int, int, float, float
+    )  # epoch, total_epochs, loss, lr
+    epoch_metrics = Signal(
+        int, dict
+    )  # epoch, {"mu_mse": ..., "sigma_mean": ...}
     finished = Signal(object)  # checkpoint dict
     cancelled = Signal(object)  # checkpoint dict -- see run()
     error = Signal(str)

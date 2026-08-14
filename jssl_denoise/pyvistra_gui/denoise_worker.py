@@ -50,7 +50,9 @@ class DenoiseWorker(QObject):
         self._cancel_requested = False
         # Mirrors DeconvolutionWorker: `buffer`'s C axis is sized by the
         # *count* of selected channels, not the source's real channel index.
-        self._channel_positions = {c: i for i, c in enumerate(sorted(source_planes))}
+        self._channel_positions = {
+            c: i for i, c in enumerate(sorted(source_planes))
+        }
 
     def cancel(self):
         self._cancel_requested = True
