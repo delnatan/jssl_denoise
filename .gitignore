@@ -1,0 +1,34 @@
+.DS_Store
+.claude/
+.pytest_cache/
+checkpoints/
+example/
+*.egg-info/
+CLAUDE.md
+*.pdf
+tmp/
+out/
+
+# personal pyvistra GUI plugin -- not part of the public core (networks,
+# training, inference); stays local, never tracked
+jssl_denoise/_pyvistra_plugin.py
+jssl_denoise/pyvistra_gui/
+
+# Python bytecode/build artifacts
+__pycache__/
+*.pyc
+build/
+dist/
+
+# model weights (outside checkpoints/)
+*.pt
+*.pth
+
+# editor swap/lock files
+.#*
+\#*\#
+*~
+
+# virtualenvs
+.venv/
+venv/

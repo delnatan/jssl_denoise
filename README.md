@@ -16,7 +16,6 @@ augmentation.
 pip install -e .            # core (torch, numpy)
 pip install -e ".[examples]"  # + tifffile, pillow, for the example scripts
 pip install -e ".[dev]"       # + pytest
-pip install -e ".[gui]"       # + pyvistra plugin (Qt-based viewer integration)
 ```
 
 Requires Python >= 3.10.
@@ -53,13 +52,6 @@ denoiser = Denoiser.load("checkpoints/de_gems.pt")
 denoised, noise_std_map = denoiser.denoise(image, tta=True)  # image: 2D ndarray
 ```
 
-### pyvistra viewer plugin
-
-Installing the `gui` extra registers an "Image > Denoising > Denoise..."
-menu item in pyvistra that wraps training and inference in a dialog. The
-plugin is discovered lazily via the `pyvistra.plugins` entry point and only
-imports Qt/torch when the menu is built, not at `import jssl_denoise` time.
-
 ## Package layout
 
 | Module | Responsibility |
@@ -74,7 +66,6 @@ imports Qt/torch when the menu is built, not at `import jssl_denoise` time.
 | `checkpoint.py` | Save/load trained D-Net/N-Net pairs |
 | `callbacks.py` | Training progress callbacks (`ConsoleCallback`) |
 | `config.py` | `TrainingConfig` hyperparameters |
-| `pyvistra_gui/` | Qt dialog and workers for the pyvistra plugin |
 
 ## Testing
 
