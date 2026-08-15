@@ -14,7 +14,7 @@ from .losses import gaussian_nll_masked
 from .masking import apply_masking, make_grid_mask, sample_grid_spacing
 from .networks import DNet, NNet
 from .normalization import RobustNormalizer
-from .patches import sample_patch_batch
+from .patches import FrameSampler, sample_patch_batch
 
 
 def _to_frame_list(
@@ -45,6 +45,15 @@ class Trainer:
     """Orchestrates D-Net/N-Net training: sampling augmented patches, drawing
     a random masking grid per step, and optimizing the masked Gaussian NLL
     (Sections 3-4 of Ollion et al. 2021). Numpy in, plain dict out — no Qt.
+
+    The returned checkpoint is always the best-mu_mse epoch's weights, not
+    necessarily the final epoch's -- once D-Net (mu) converges, N-Net's two
+    noise-variance parameters can keep drifting under further gradient steps
+    (their own optimum shifts along with the batch-to-batch noise in the
+    residual estimate, with nothing left to anchor it once mu stops moving),
+    which raises the raw NLL loss long after mu_mse -- the actual denoising-
+    quality signal -- has flattened out. Training the extra epochs is mostly
+    wasted compute in that regime, hence `early_stop_patience`.
     """
 
     def __init__(self, config: TrainingConfig):
@@ -63,12 +72,20 @@ class Trainer:
         frames = _to_frame_list(images)
         normalizer = RobustNormalizer.fit(frames)
         normalized_frames = [normalizer.transform(f) for f in frames]
+        # Lives for the whole fit() call, not reconstructed per epoch or per
+        # step -- see FrameSampler's docstring for why.
+        frame_sampler = FrameSampler(len(normalized_frames), rng)
 
         d_net = DNet(base_filters=cfg.base_filters).to(device)
         n_net = NNet().to(device)
         optimizer = optim.Adam(
             list(d_net.parameters()) + list(n_net.parameters()), lr=cfg.lr
         )
+
+        best_mu_mse = float("inf")
+        best_epoch = 0
+        best_state: tuple[dict, dict] | None = None
+        epochs_since_improvement = 0
 
         lr = cfg.lr
         for epoch in range(1, cfg.epochs + 1):
@@ -82,13 +99,15 @@ class Trainer:
             epoch_sigma_sum = 0.0
             for step in range(1, cfg.steps_per_epoch + 1):
                 if should_stop is not None and should_stop():
-                    return self._checkpoint(d_net, n_net, normalizer, cfg)
+                    state = best_state or self._snapshot(d_net, n_net)
+                    return self._checkpoint(*state, normalizer, cfg)
 
                 batch = sample_patch_batch(
                     normalized_frames,
                     cfg.tile_size,
                     cfg.tiles_per_batch,
                     rng,
+                    frame_sampler,
                     augment=cfg.augment,
                 ).to(device)
 
@@ -125,6 +144,7 @@ class Trainer:
                         step, cfg.steps_per_epoch, epoch, loss_value
                     )
 
+            mu_mse = epoch_mse_sum / cfg.steps_per_epoch
             if callback is not None:
                 callback.on_epoch_end(
                     epoch, cfg.epochs, epoch_loss_sum / cfg.steps_per_epoch, lr
@@ -133,24 +153,52 @@ class Trainer:
                     callback.on_epoch_metrics(
                         epoch,
                         {
-                            "mu_mse": epoch_mse_sum / cfg.steps_per_epoch,
+                            "mu_mse": mu_mse,
                             "sigma_mean": epoch_sigma_sum / cfg.steps_per_epoch,
                         },
                     )
 
-        return self._checkpoint(d_net, n_net, normalizer, cfg)
+            if mu_mse < best_mu_mse - cfg.early_stop_min_delta:
+                best_mu_mse = mu_mse
+                best_epoch = epoch
+                best_state = self._snapshot(d_net, n_net)
+                epochs_since_improvement = 0
+            else:
+                epochs_since_improvement += 1
+
+            if (
+                cfg.early_stop_patience is not None
+                and epochs_since_improvement >= cfg.early_stop_patience
+            ):
+                if callback is not None and hasattr(callback, "on_early_stop"):
+                    callback.on_early_stop(epoch, best_epoch, best_mu_mse)
+                break
+
+        state = best_state or self._snapshot(d_net, n_net)
+        return self._checkpoint(*state, normalizer, cfg)
+
+    @staticmethod
+    def _snapshot(d_net: DNet, n_net: NNet) -> tuple[dict, dict]:
+        """CPU-resident clone of both networks' state dicts -- cloned so
+        later in-place optimizer steps on `d_net`/`n_net` can't mutate a
+        stashed "best so far" snapshot, and moved off-device so holding one
+        aside for the rest of a long run doesn't pin extra GPU/MPS memory."""
+        return (
+            {k: v.detach().clone().cpu() for k, v in d_net.state_dict().items()},
+            {k: v.detach().clone().cpu() for k, v in n_net.state_dict().items()},
+        )
 
     @staticmethod
     def _checkpoint(
-        d_net: DNet,
-        n_net: NNet,
+        d_net_state: dict,
+        n_net_state: dict,
         normalizer: RobustNormalizer,
         config: TrainingConfig,
     ) -> dict[str, Any]:
         return {
             "version": "1.0",
-            "d_net_state_dict": d_net.state_dict(),
-            "n_net_state_dict": n_net.state_dict(),
+            "d_net_state_dict": d_net_state,
+            "n_net_state_dict": n_net_state,
             "normalizer": normalizer.to_dict(),
             "config": asdict(config),
         }

@@ -19,13 +19,19 @@ class TrainingCallback(Protocol):
         self, epoch: int, total_epochs: int, loss: float, lr: float
     ) -> None: ...
 
-    # `Trainer` also duck-types an *optional* `on_epoch_metrics(self, epoch,
-    # metrics: dict[str, float])` method for extra per-epoch diagnostics
-    # (e.g. mu's MSE against the raw target, mean sigma) that aren't part of
-    # the loss itself -- deliberately left off this Protocol (and so out of
-    # its runtime_checkable isinstance() contract) so existing callbacks that
-    # only implement the two methods above keep satisfying it unchanged.
-    # See `ConsoleCallback` for a callback that implements it.
+    # `Trainer` also duck-types two *optional* methods, deliberately left off
+    # this Protocol (and so out of its runtime_checkable isinstance() contract)
+    # so existing callbacks that only implement the two methods above keep
+    # satisfying it unchanged. See `ConsoleCallback` for a callback that
+    # implements both:
+    #
+    #   on_epoch_metrics(self, epoch, metrics: dict[str, float]) -- extra
+    #   per-epoch diagnostics (mu's MSE against the raw target, mean sigma)
+    #   that aren't part of the loss itself.
+    #
+    #   on_early_stop(self, epoch, best_epoch, best_mu_mse) -- fired once, in
+    #   place of the epoch loop's normal exit, when `early_stop_patience`
+    #   epochs pass with no mu_mse improvement (see config.TrainingConfig).
 
 
 class ConsoleCallback:
@@ -61,3 +67,13 @@ class ConsoleCallback:
             f"{name}={value:.4f}" for name, value in metrics.items()
         )
         print(f"          {parts}", flush=True)
+
+    def on_early_stop(
+        self, epoch: int, best_epoch: int, best_mu_mse: float
+    ) -> None:
+        print(
+            f"early stopping at epoch {epoch} -- no mu_mse improvement since "
+            f"epoch {best_epoch} (best mu_mse={best_mu_mse:.4f}); returning "
+            f"that epoch's weights",
+            flush=True,
+        )

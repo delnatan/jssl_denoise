@@ -35,3 +35,15 @@ class TrainingConfig:
 
     device: str | None = "mps"
     seed: int | None = None
+
+    # Best-checkpoint tracking / early stopping, keyed off mu_mse rather than
+    # the raw NLL loss -- see Trainer.fit's docstring for why loss keeps
+    # drifting after mu (D-Net) has converged, purely from N-Net's two
+    # noise-variance parameters wandering, which makes it the wrong signal to
+    # plateau-detect on. `early_stop_patience` is epochs with no mu_mse
+    # improvement (beyond `early_stop_min_delta`) before training stops early;
+    # None disables early stopping and runs the full `epochs` count. Either
+    # way, Trainer.fit always returns the best-mu_mse epoch's weights, not
+    # necessarily the final epoch's.
+    early_stop_patience: int | None = None
+    early_stop_min_delta: float = 0.0
