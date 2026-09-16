@@ -3,16 +3,12 @@
 .pytest_cache/
 checkpoints/
 example/
+data/
 *.egg-info/
 CLAUDE.md
 *.pdf
 tmp/
 out/
-
-# personal pyvistra GUI plugin -- not part of the public core (networks,
-# training, inference); stays local, never tracked
-jssl_denoise/_pyvistra_plugin.py
-jssl_denoise/pyvistra_gui/
 
 # Python bytecode/build artifacts
 __pycache__/
