@@ -52,6 +52,40 @@ denoiser = Denoiser.load("checkpoints/de_gems.pt")
 denoised, noise_std_map = denoiser.denoise(image, tta=True)  # image: 2D ndarray
 ```
 
+### Bayesian Poisson–Gaussian denoiser (`jssl_denoise.poisson`)
+
+A separate method after
+[de Wolf, Nonnekens & Smal, ISBI 2026](https://doi.org/10.1109/ISBI61048.2026.11516009),
+extended with camera read noise. A blind-spot U-Net predicts a per-pixel
+Gamma prior over the photon rate; training maximizes the exact
+Poisson–Gaussian marginal likelihood, and denoising returns the posterior
+mean, which folds each pixel's own observed value back in.
+
+The camera model (offset, gain in ADU/e⁻, read noise in e⁻) is fitted from the
+raw images before training and then frozen. Gain and read noise cannot be
+learned jointly with the prior, since a free prior variance absorbs them. Pass
+the camera's black level as `offset` for a physically meaningful read-noise
+estimate. Input must be raw ADU (not background-subtracted or rescaled).
+
+```bash
+python examples/train_poisson_example.py example/de_gems.tif checkpoints/de_gems_poisson.pt --offset 100
+python examples/denoise_poisson_example.py checkpoints/de_gems_poisson.pt example/de_gems.tif --output-dir out/poisson
+```
+
+```python
+from jssl_denoise.poisson import PoissonDenoiser, PoissonTrainer, PoissonTrainingConfig
+
+checkpoint = PoissonTrainer(PoissonTrainingConfig(offset=100.0)).fit(stack)
+print(checkpoint["camera"])  # {'offset': ..., 'gain': ..., 'read_std': ...}
+
+denoiser = PoissonDenoiser.from_checkpoint(checkpoint, device)
+denoised, posterior_std = denoiser.denoise(image)  # both in ADU
+```
+
+Inference runs one masked pass per grid phase (`mask_spacing**2`, default 9)
+so the prior never sees the pixel it is combined with; `tta=True` multiplies
+that by 8.
+
 ## Package layout
 
 | Module | Responsibility |
@@ -66,6 +100,11 @@ denoised, noise_std_map = denoiser.denoise(image, tta=True)  # image: 2D ndarray
 | `checkpoint.py` | Save/load trained D-Net/N-Net pairs |
 | `callbacks.py` | Training progress callbacks (`ConsoleCallback`) |
 | `config.py` | `TrainingConfig` hyperparameters |
+| `poisson/camera.py` | `CameraModel` and `estimate_camera_model` — gain/offset/read noise from raw images |
+| `poisson/likelihood.py` | Exact Poisson–Gaussian marginal likelihood and posterior moments under a Gamma prior |
+| `poisson/network.py` | `GammaPriorNet` — U-Net predicting the per-pixel Gamma prior |
+| `poisson/training.py` | `PoissonTrainer` |
+| `poisson/inference.py` | `PoissonDenoiser` — blind-spot prior + Bayesian posterior mean |
 
 ## Testing
 

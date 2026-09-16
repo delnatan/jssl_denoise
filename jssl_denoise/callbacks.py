@@ -29,9 +29,10 @@ class TrainingCallback(Protocol):
     #   per-epoch diagnostics (mu's MSE against the raw target, mean sigma)
     #   that aren't part of the loss itself.
     #
-    #   on_early_stop(self, epoch, best_epoch, best_mu_mse) -- fired once, in
+    #   on_early_stop(self, epoch, best_epoch, best_metric) -- fired once, in
     #   place of the epoch loop's normal exit, when `early_stop_patience`
-    #   epochs pass with no mu_mse improvement (see config.TrainingConfig).
+    #   epochs pass with no improvement in the trainer's monitored metric
+    #   (mu_mse for Trainer, see config.TrainingConfig).
 
 
 class ConsoleCallback:
@@ -69,11 +70,13 @@ class ConsoleCallback:
         print(f"          {parts}", flush=True)
 
     def on_early_stop(
-        self, epoch: int, best_epoch: int, best_mu_mse: float
+        self, epoch: int, best_epoch: int, best_metric: float
     ) -> None:
+        # best_metric is whatever the trainer monitors: mu_mse for Trainer,
+        # the epoch loss for poisson.PoissonTrainer.
         print(
-            f"early stopping at epoch {epoch} -- no mu_mse improvement since "
-            f"epoch {best_epoch} (best mu_mse={best_mu_mse:.4f}); returning "
+            f"early stopping at epoch {epoch} -- no improvement since "
+            f"epoch {best_epoch} (best={best_metric:.4f}); returning "
             f"that epoch's weights",
             flush=True,
         )
